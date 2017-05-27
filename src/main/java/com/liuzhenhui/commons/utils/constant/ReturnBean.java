@@ -77,7 +77,7 @@ public class ReturnBean<T> implements Serializable {
 	}
 
 	public String getMsg() {
-		return StringUtils.isBlank(msg) ? "" : StringUtils.getLimitLengthString(msg, 512);
+		return StringUtils.isBlank(msg) ? "" :msg;
 	}
 
 	public void setMsg(String msg) {

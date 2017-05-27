@@ -1,178 +1,393 @@
 package com.liuzhenhui.commons.utils.string;
 
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
+import java.text.DecimalFormat;
+import java.util.List;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.lang3.StringEscapeUtils;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.servlet.LocaleResolver;
+
 
 /**
- * 
- * @author zhenhui.liu
- * 2017年5月11日 下午5:08:06
+ * @Description 字符串工具类, 继承org.apache.commons.lang3.StringUtils类
+ * @author xuebao.li
+ * @date 2015年6月10日
  */
-public class StringUtils  {
+public class StringUtils extends org.apache.commons.lang3.StringUtils {
+	
+    private static final char SEPARATOR = '_';
+    private static final String CHARSET_NAME = "UTF-8";
+    
+    
+    private static String HanDigiStr[] = new String[] { "零", "壹", "贰", "叁",
+        "肆", "伍", "陆", "柒", "捌", "玖" };
 
-	public static boolean isBlank(String str){
-		return true;
+    private static String HanDiviStr[] = new String[] { "", "拾", "佰", "仟", "万",
+            "拾", "佰", "仟", "亿", "拾", "佰", "仟", "万", "拾", "佰", "仟", "亿", "拾",
+            "佰", "仟", "万", "拾", "佰", "仟" };
+    
+    /**
+     * 转换为字节数组
+     * @param str
+     * @return
+     */
+    public static byte[] getBytes(String str){
+    	if (str != null){
+    		try {
+				return str.getBytes(CHARSET_NAME);
+			} catch (UnsupportedEncodingException e) {
+				return null;
+			}
+    	}else{
+    		return null;
+    	}
+    }
+    
+    /**
+     * 转换为字节数组
+     * @param str
+     * @return
+     */
+    public static String toString(byte[] bytes){
+    	try {
+			return new String(bytes, CHARSET_NAME);
+		} catch (UnsupportedEncodingException e) {
+			return EMPTY;
+		}
+    }
+    
+    /**
+     * 是否包含字符串
+     * @param str 验证字符串
+     * @param strs 字符串组
+     * @return 包含返回true
+     */
+    public static boolean inString(String str, String... strs){
+    	if (str != null){
+        	for (String s : strs){
+        		if (str.equals(trim(s))){
+        			return true;
+        		}
+        	}
+    	}
+    	return false;
+    }
+    
+	/**
+	 * 替换掉HTML标签方法
+	 */
+	public static String replaceHtml(String html) {
+		if (isBlank(html)){
+			return "";
+		}
+		String regEx = "<.+?>";
+		Pattern p = Pattern.compile(regEx);
+		Matcher m = p.matcher(html);
+		String s = m.replaceAll("");
+		return s;
 	}
 	
-	public static boolean isNotBlank(String str){
-		return true;
-	}
 	/**
-	 * 序列化字符串
-	 * @param string 字符串
-	 * @return 序列化后的字节数组
-	 */
-	public static byte[] serialize(final String string, final Charset charset) {
-		return (string == null ? null : string.getBytes(charset));
-	}
-
-	/**
-	 * 反序列化字符串
-	 * @param bytes 序列化字节数组
-	 * @return 反序列化后的字符串
-	 */
-	public static String deserialize(final byte[] bytes, final Charset charset) {
-		return (bytes == null ? null : new String(bytes, charset));
-	}
-
-
-
-	/**
-	 * 使用StringBuilder进行拼接
-	 * @param strings
+	 * 替换为手机识别的HTML，去掉样式及属性，保留回车。
+	 * @param html
 	 * @return
 	 */
-	public static StringBuilder concatToSB(String... strings) {
-		StringBuilder builder = new StringBuilder();
-		if (strings != null) {
-			for (String str : strings) {
-				builder.append(str);
-			}
-		}
-		return builder;
-	}
-
-	/**
-	 * 去掉为NULL的情况
-	 * @param str
-	 * @return
-	 */
-	public static String safeValue(String str) {
-		if (str == null) return "";
-		return str;
-	}
-
-	/**
-	 * object to string
-	 * @param r
-	 * @return
-	 */
-	public static String objectToStr(Object obj) {
-		if (obj == null) return "";
-		return String.valueOf(obj);
-	}
-
-
-	/**
-	 * 截短字符串，返回长度不大于maxLen的子串.
-	 * 如果所给源字符串长度过大，则大于maxLen的后面部分用“…”替换
-	 * @param str 源字符
-	 * @param maxLen 截短后的最大长度(按字节计算，一个汉字或全角标点长度2，一个英文、数字或半角标点长度1)
-	 * @return 截短后的字符串
-	 */
-	public static String getLimitLengthString(String str, int maxLen) {
-		return getLimitLengthString(str, maxLen, Charset.defaultCharset().name());
-	}
-
-	/**
-	 * 截短字符串，返回长度不大于maxLen的子串.
-	 * 如果所给源字符串长度过大，则大于maxLen的后面部分用symbol替换。
-	 * 如果为空(null)则返回""。
-	 * @param str 源字符
-	 * @param maxLen 截短后的最大长度(按字节计算，一个汉字或全角标点长度2，一个英文、数字或半角标点长度1)
-	 * @param charsetName 字符集
-	 * @return 截短后的字符串
-	 */
-	public static String getLimitLengthString(String str, int maxLen, String charsetName) {
-		if (str == null) {
+	public static String replaceMobileHtml(String html){
+		if (html == null){
 			return "";
+		}
+		return html.replaceAll("<([a-z]+?)\\s+?.*?>", "<$1>");
+	}
+	
+	/**
+	 * 转换为Double类型
+	 */
+	public static Double toDouble(Object val){
+		if (val == null){
+			return 0D;
 		}
 		try {
-			byte b[] = str.getBytes(charsetName);
-			if (b.length <= maxLen) {
-				return str;
-			}
-
-			// 返回字符串的长度应小于或等于此长度
-			int len = maxLen;
-
-			// 使用二分法查找算法
-			int index = 0;
-			// 记录第一个元素
-			int lower = 0;
-			// 记录最后一个元素
-			int higher = str.length() - 1;
-			while (lower <= higher) {
-				// 记录中间元素，用两边之和除2
-				index = (lower + higher) / 2;
-				int tmpLen = str.substring(0, index).getBytes(charsetName).length;
-				if (tmpLen == len) {
-					// 如果得到的与要查找的相等，则break退出
-					break;
-				} else if (tmpLen < len) {
-					// 如果得到的要小于查找的，就用下标加1
-					lower = index + 1;
-				} else {
-					// 如果得到的要大于查找的，就用下标减1
-					higher = index - 1;
-				}
-			}
-			if (lower > higher) {
-				index = higher;
-			}
-
-			// 调用String构造方法以避免substring导致的内存泄露
-			return new String(str.substring(0, index));
-		} catch (UnsupportedEncodingException e) {
-			throw new IllegalStateException(e);
+			return Double.valueOf(trim(val.toString()));
+		} catch (Exception e) {
+			return 0D;
 		}
 	}
 
 	/**
-	 * 去掉字符串两端的全角空格和半角空格.
-	 * 如果为空(null)则返回""
-	 * @param str 字符串
-	 * @return 无左右空格的字符串
+	 * 转换为Float类型
 	 */
-	public static String trim(String str) {
-		if (str == null || str.equals("")) {
-			return "";
-		} else {
-			return str.replaceAll("^[　 ]+|[　 ]+$", "");
-		}
+	public static Float toFloat(Object val){
+		return toDouble(val).floatValue();
 	}
 
 	/**
-	 * 去除字符串首尾空格以及中间的所有空格，包括空白符、换行符、段落符、全角空格等
-	 * 如果为空(null)则返回""
-	 * @param str 源字符
-	 * @return 不包含空格的字符串
-	 * @see java.lang.Character#isWhitespace(char)
+	 * 转换为Long类型
 	 */
-	public static String trimAll(String str) {
-		if (str == null) {
-			return "";
-		}
-
-		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < str.length(); i++) {
-			char ch = str.charAt(i);
-			// 过滤掉各种空白符
-			if (!Character.isWhitespace(ch)) {
-				sb.append(ch);
-			}
-		}
-
-		return sb.toString();
+	public static Long toLong(Object val){
+		return toDouble(val).longValue();
 	}
+
+	/**
+	 * 转换为Integer类型
+	 */
+	public static Integer toInteger(Object val){
+		return toLong(val).intValue();
+	}
+	
+	/**
+	 * 获得用户远程地址
+	 */
+	public static String getRemoteAddr(HttpServletRequest request){
+		String remoteAddr = request.getHeader("X-Real-IP");
+        if (isNotBlank(remoteAddr)) {
+        	remoteAddr = request.getHeader("X-Forwarded-For");
+        }else if (isNotBlank(remoteAddr)) {
+        	remoteAddr = request.getHeader("Proxy-Client-IP");
+        }else if (isNotBlank(remoteAddr)) {
+        	remoteAddr = request.getHeader("WL-Proxy-Client-IP");
+        }
+        return remoteAddr != null ? remoteAddr : request.getRemoteAddr();
+	}
+
+	/**
+	 * 驼峰命名法工具
+	 * @return
+	 * 		toCamelCase("hello_world") == "helloWorld" 
+	 * 		toCapitalizeCamelCase("hello_world") == "HelloWorld"
+	 * 		toUnderScoreCase("helloWorld") = "hello_world"
+	 */
+    public static String toCamelCase(String s) {
+        if (s == null) {
+            return null;
+        }
+
+        s = s.toLowerCase();
+
+        StringBuilder sb = new StringBuilder(s.length());
+        boolean upperCase = false;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+
+            if (c == SEPARATOR) {
+                upperCase = true;
+            } else if (upperCase) {
+                sb.append(Character.toUpperCase(c));
+                upperCase = false;
+            } else {
+                sb.append(c);
+            }
+        }
+
+        return sb.toString();
+    }
+
+    /**
+	 * 驼峰命名法工具
+	 * @return
+	 * 		toCamelCase("hello_world") == "helloWorld" 
+	 * 		toCapitalizeCamelCase("hello_world") == "HelloWorld"
+	 * 		toUnderScoreCase("helloWorld") = "hello_world"
+	 */
+    public static String toCapitalizeCamelCase(String s) {
+        if (s == null) {
+            return null;
+        }
+        s = toCamelCase(s);
+        return s.substring(0, 1).toUpperCase() + s.substring(1);
+    }
+    
+    /**
+	 * 驼峰命名法工具
+	 * @return
+	 * 		toCamelCase("hello_world") == "helloWorld" 
+	 * 		toCapitalizeCamelCase("hello_world") == "HelloWorld"
+	 * 		toUnderScoreCase("helloWorld") = "hello_world"
+	 */
+    public static String toUnderScoreCase(String s) {
+        if (s == null) {
+            return null;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        boolean upperCase = false;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+
+            boolean nextUpperCase = true;
+
+            if (i < (s.length() - 1)) {
+                nextUpperCase = Character.isUpperCase(s.charAt(i + 1));
+            }
+
+            if ((i > 0) && Character.isUpperCase(c)) {
+                if (!upperCase || !nextUpperCase) {
+                    sb.append(SEPARATOR);
+                }
+                upperCase = true;
+            } else {
+                upperCase = false;
+            }
+
+            sb.append(Character.toLowerCase(c));
+        }
+
+        return sb.toString();
+    }
+    
+    /**
+     * 如果不为空，则设置值
+     * @param target
+     * @param source
+     */
+    public static String setValueIfNotBlank(String target, String source) {
+		if (isNotBlank(source)){
+			target = source;
+		}
+		return target;
+	}
+ 
+    /**
+     * 转换为JS获取对象值，生成三目运算返回结果
+     * @param objectString 对象串
+     *   例如：row.user.id
+     *   返回：!row?'':!row.user?'':!row.user.id?'':row.user.id
+     */
+    public static String jsGetVal(String objectString){
+    	StringBuilder result = new StringBuilder();
+    	StringBuilder val = new StringBuilder();
+    	String[] vals = split(objectString, ".");
+    	for (int i=0; i<vals.length; i++){
+    		val.append("." + vals[i]);
+    		result.append("!"+(val.substring(1))+"?'':");
+    	}
+    	result.append(val.substring(1));
+    	return result.toString();
+    }
+    
+    public static boolean isNull(Object obj) {
+        if (obj == null) {
+            return true;
+        }
+        return "".equals(obj.toString().trim());
+    }
+
+    public static boolean notNull(String str) {
+        return str != null && !"".equals(str);
+    }
+    
+    private static String PositiveIntegerToHanStr(String NumStr) { // 输入字符串必须正整数，只允许前导空格(必须右对齐)，不宜有前导零
+        String RMBStr = "";
+        boolean lastzero = false;
+        boolean hasvalue = false; // 亿、万进位前有数值标记
+        int len, n;
+        len = NumStr.length();
+        if (len > 15)
+            return "数值过大!";
+        for (int i = len - 1; i >= 0; i--) {
+            if (NumStr.charAt(len - i - 1) == ' ')
+                continue;
+            n = NumStr.charAt(len - i - 1) - '0';
+            if (n < 0 || n > 9)
+                return "输入含非数字字符!";
+
+            if (n != 0) {
+                if (lastzero)
+                    RMBStr += HanDigiStr[0]; // 若干零后若跟非零值，只显示一个零
+                // 除了亿万前的零不带到后面
+                // if( !( n==1 && (i%4)==1 && (lastzero || i==len-1) ) ) //
+                // 如十进位前有零也不发壹音用此行
+                if (!(n == 1 && (i % 4) == 1 && i == len - 1)) // 十进位处于第一位不发壹音
+                    RMBStr += HanDigiStr[n];
+                RMBStr += HanDiviStr[i]; // 非零值后加进位，个位为空
+                hasvalue = true; // 置万进位前有值标记
+
+            } else {
+                if ((i % 8) == 0 || ((i % 8) == 4 && hasvalue)) // 亿万之间必须有非零值方显示万
+                    RMBStr += HanDiviStr[i]; // “亿”或“万”
+            }
+            if (i % 8 == 0)
+                hasvalue = false; // 万进位前有值标记逢亿复位
+            lastzero = (n == 0) && (i % 4 != 0);
+        }
+
+        if (RMBStr.length() == 0)
+            return HanDigiStr[0]; // 输入空字符或"0"，返回"零"
+        return RMBStr;
+    }
+    
+    /**
+     * 大写金额转换
+     * 
+     * @param strVal
+     * @return
+     * @see [类、类#方法、类#成员]
+     */
+    public static String DigitalConversion(String strVal) {
+        double val = Double.parseDouble(strVal);
+        String SignStr = "";
+        String TailStr = "";
+        long fraction, integer;
+        int jiao, fen;
+
+        if (val < 0) {
+            val = -val;
+            SignStr = "负";
+        }
+        if (val > 99999999999999.999 || val < -99999999999999.999)
+            return "数值位数过大!";
+        // 四舍五入到分
+        long temp = Math.round(val * 100);
+        integer = temp / 100;
+        fraction = temp % 100;
+        jiao = (int) fraction / 10;
+        fen = (int) fraction % 10;
+        if (jiao == 0 && fen == 0) {
+            TailStr = "整";
+        } else {
+            TailStr = HanDigiStr[jiao];
+            if (jiao != 0)
+                TailStr += "角";
+            if (integer == 0 && jiao == 0) // 零元后不写零几分
+                TailStr = "";
+            if (fen != 0)
+                TailStr += HanDigiStr[fen] + "分";
+        }
+
+        return SignStr + PositiveIntegerToHanStr(String.valueOf(integer)) + "元"
+                + TailStr;
+    }
+    
+    /**
+     * 大写金额
+     * @param value
+     * @return
+     */
+    public static String hangeToBig(double value) {
+    	 String s = new DecimalFormat("#.00").format(value);  
+         s = s.replaceAll("\\.", ""); 
+         char[] digit = { '零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖' };  
+         String unit = "仟佰拾兆仟佰拾亿仟佰拾万仟佰拾元角分";  
+         int l = unit.length();  
+         StringBuffer sb = new StringBuffer(unit);  
+         for (int i = s.length() - 1; i >= 0; i--)  
+             sb = sb.insert(l - s.length() + i, digit[(s.charAt(i) - 0x30)]);  
+         s = sb.substring(l - s.length(), l + s.length());  
+         s = s.replaceAll("零[拾佰仟]", "零").replaceAll("零{2,}", "零").replaceAll("零([兆万元])", "$1").replaceAll("零[角分]", "");  
+         if (s.endsWith("角"))  
+             s += "零分";  
+         if (!s.contains("角") && !s.contains("分") && s.contains("元"))  
+             s += "整";  
+         if (s.contains("分") && !s.contains("整") && !s.contains("角"))  
+             s = s.replace("元", "元零");  
+         return s;  
+    }  
+    
+    
 }
