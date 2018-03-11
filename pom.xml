@@ -4,7 +4,7 @@
   <artifactId>commons-utils-all</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <properties>
-	  
+	    <saas.version>fddf</saas.version>
 	  
 		<spring.version>4.2.7.RELEASE</spring.version>
 		<jstl.version>1.1.2</jstl.version>
